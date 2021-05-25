@@ -13,6 +13,21 @@ import ScreenCapture
 
 let regionUrl = ScreenCapture.captureRegion(destination: "/tmp/ocr.png")
 
+extension String
+{
+    func trim() -> String
+   {
+    return self.trimmingCharacters(in: CharacterSet.whitespaces)
+   }
+}
+
+let EN_LAN = "en-US"
+var detectLan = EN_LAN
+
+if CommandLine.arguments.count > 1 {
+    detectLan = CommandLine.arguments[1].trim()
+}
+
 func convertCIImageToCGImage(inputImage: CIImage) -> CGImage? {
     let context = CIContext(options: nil)
     if let cgImage = context.createCGImage(inputImage, from: inputImage.extent) {
@@ -41,7 +56,7 @@ func recognizeTextHandler(request: VNRequest, error: Error?) {
     
 }
 
-func detectText(fileName : URL) -> [CIFeature]? {
+func detectText(fileName : URL, detectLanguage : String) -> [CIFeature]? {
     if let ciImage = CIImage(contentsOf: fileName){
         guard let img = convertCIImageToCGImage(inputImage: ciImage) else { return nil}
       
@@ -49,7 +64,14 @@ func detectText(fileName : URL) -> [CIFeature]? {
 
         // Create a new request to recognize text.
         let request = VNRecognizeTextRequest(completionHandler: recognizeTextHandler)
-
+        request.usesLanguageCorrection = true
+        
+        if detectLanguage == EN_LAN {
+            request.recognitionLanguages = [EN_LAN]
+        } else {
+            request.recognitionLanguages = [detectLanguage, EN_LAN]
+        }
+        
         do {
             // Perform the text-recognition request.
             try requestHandler.perform([request])
@@ -59,9 +81,11 @@ func detectText(fileName : URL) -> [CIFeature]? {
 }
     return nil
 }
+
+    
     let inputURL = URL(fileURLWithPath: "/tmp/ocr.png")
    
-    if let features = detectText(fileName : inputURL), !features.isEmpty{
+    if let features = detectText(fileName : inputURL, detectLanguage: detectLan), !features.isEmpty{
               
     }
    
